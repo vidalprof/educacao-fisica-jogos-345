@@ -418,14 +418,21 @@ var QUESTOES=[
  {disc:"acao", fig:"mais4", pergunta:"O CORINGA COMPRAR QUATRO tem uma condição para ser jogado. Qual é?",
   opcoes:["Só pode ser jogado na última rodada da partida.","Só pode ser jogado por quem tiver mais de cinco cartas na mão.","Só pode ser jogado se você NÃO tiver nenhuma outra carta da cor que está na mesa.","Pode ser jogado a qualquer momento, sem nenhuma condição."], correta:2},
 
- /* ⚠️ Esta questão já esteve errada, e o defeito não era a resposta: as letras A
-    e B diziam quase a mesma frase ("compra quatro cartas, e quem jogou escolhe
-    a cor" / "compra quatro cartas e escolhe a cor"). Para uma criança do 3º ano
-    isso mede LEITURA ATENTA, não a regra do jogo — e prova não é pegadinha.
-    Agora a pergunta separa o que é a regra: QUEM escolhe a cor. */
- {disc:"acao", fig:"mais4", pergunta:"Alguém jogou o coringa comprar quatro. O próximo compra as quatro cartas — mas QUEM escolhe a cor que continua o jogo?",
-  opcoes:["Quem jogou a carta.","O próximo jogador, o que comprou as quatro cartas.","Todos os jogadores votam na cor.","Ninguém escolhe: a cor continua a mesma de antes."], correta:0},
-
+ /* ✂️ AQUI HAVIA UMA 21ª QUESTÃO, e ela saiu a pedido do Marcos (20/set):
+    *"Faça a prova com 20 questões pode ser?"*. Ela perguntava QUEM escolhe a
+    cor quando alguém joga o coringa comprar quatro.
+    ⚠️ POR QUE SAIU ESTA E NÃO OUTRA: era a única cujo conteúdo já aparecia em
+       duas irmãs. A questão do CORINGA (a 9) ensina que a carta preta serve
+       para quem a joga escolher a cor, e as duas do DESAFIO (agora 11 e 12)
+       deixam claro que quem compra as quatro é o próximo jogador. Assim nenhuma
+       REGRA que o professor passou ficou sem ser cobrada — cortar qualquer
+       outra teria tirado uma regra inteira da prova.
+    ⚠️ E CORTAR UMA QUESTÃO RENUMERA TODAS AS SEGUINTES, inclusive na voz
+       ("Pergunta doze" vira "Pergunta onze"). Isso não é problema aqui porque a
+       fala é MONTADA da pergunta pelo `falaDaQuestao`, e o `falas.json` é
+       gerado desse mesmo código: a voz se renumera sozinha. Se a fala fosse
+       escrita à mão, como era nas provas anteriores, este corte deixaria dez
+       narrações mentindo o número da questão. */
  {disc:"desafio", fig:"desafio", pergunta:"Você jogou um comprar quatro. O colega desconfia que você blefou e te DESAFIA. Você mostra as suas cartas e ele vê que você TINHA, sim, a cor da mesa. O que acontece?",
   opcoes:["Você compra quatro cartas.","O colega compra quatro cartas.","O colega compra seis cartas.","Ninguém compra nada e o jogo segue."], correta:0},
 
@@ -477,6 +484,26 @@ var i; for(i=0;i<QUESTOES.length;i++){respostas.push(-1);}
 function $(id){return document.getElementById(id);}
 function esc(s){return (""+s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 
+/* ====== COMO A VOZ LÊ (a tela escreve certo, a voz lê certo) ==========
+   ⚠️ O Edge TTS lê "Tangram" com a ênfase errada — defeito que o MARCOS ouviu
+      e pegou em ago/2026, e que está na lista do portão `_qa/falas.py`. A cura
+      da casa é escrever **tângram**, com circunflexo, SÓ NA VOZ: é o que a
+      nossa atividade `_tangram` faz nas 93 falas dela.
+   ⚠️ A grafia certa é "Tangram", sem acento, e é ela que fica na TELA. Trocar o
+      texto escrito para agradar o sintetizador seria ensinar a palavra errada a
+      quem está aprendendo a ler — que é exatamente o público desta prova.
+   ⚠️ E A CONVERSÃO MORA DENTRO DO `falar()`, de propósito. Se ela ficasse só no
+      gerador do `falas.json`, o app pediria o mp3 pela chave do texto ORIGINAL
+      e o arquivo estaria gravado sob a chave do texto convertido: alto-falante
+      mudo, sem erro nenhum no console. Há um caminho só, e todo mundo passa
+      por ele. */
+var PRONUNCIA = [[/[Tt]angram/g, "tângram"]];
+function paraVoz(t){
+  var s = "" + t, i;
+  for(i = 0; i < PRONUNCIA.length; i++){ s = s.replace(PRONUNCIA[i][0], PRONUNCIA[i][1]); }
+  return s;
+}
+
 /* ====== VOZ (arquivos audio/v<hash>.mp3) ====== */
 var VOZ_MUDA=false; try{VOZ_MUDA=(localStorage.getItem("efjogos_mudo")==="1");}catch(e){}
 var _falaAudio=null, _ultimaFala="";
@@ -498,7 +525,8 @@ function falar(texto,_forcar){
   _ultimaFala=texto;
   if(VOZ_MUDA&&!_forcar){return;}
   pararFala();
-  try{var a=new Audio("audio/"+_chaveVoz(texto)+".mp3");_falaAudio=a;a.play();}catch(e){}
+  /* a chave sai do texto COMO A VOZ LÊ — é sob ela que o mp3 foi gravado */
+  try{var a=new Audio("audio/"+_chaveVoz(paraVoz(texto))+".mp3");_falaAudio=a;a.play();}catch(e){}
 }
 function ouvirOpc(idx){ pararFala(); falar(QUESTOES[atual].opcoes[idx],true); }
 function repetirUltima(){if(_ultimaFala){pararFala();falar(_ultimaFala,true);}}
